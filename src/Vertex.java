@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Collections;
 import java.util.ArrayDeque;
@@ -30,7 +31,10 @@ class Maze extends World {
   private final int width;
   private final int height;
 
-  private final ArrayDeque<Vertex> alreadySeen;
+  private final HashSet<Vertex> alreadySeen;
+  // TODO replace already seen with a hash set and make sure we add 
+  // and clear the solution with the alreadySeen
+  private final ArrayDeque<Vertex> solution;
   private final ArrayDeque<Vertex> worklist;
 
   private String mode;
@@ -49,7 +53,8 @@ class Maze extends World {
     this.height = height;
 
     this.current = this.vertices.get(0).get(0);
-    this.alreadySeen = new ArrayDeque<Vertex>();
+    this.alreadySeen = new HashSet<Vertex>();
+    this.solution = new ArrayDeque<Vertex>();
     this.worklist = new ArrayDeque<Vertex>();
     this.worklist.addFirst(current);
 
@@ -68,6 +73,7 @@ class Maze extends World {
     this.createMaze(width, height);
 
     this.alreadySeen.clear();
+    this.solution.clear();
     this.worklist.clear();
     this.worklist.addFirst(this.vertices.get(0).get(0));
   }
@@ -102,6 +108,7 @@ class Maze extends World {
         this.makeGrey();
 
         this.alreadySeen.clear();
+        this.solution.clear();
         this.worklist.clear();
         this.worklist.add(this.vertices.get(0).get(0));
         this.current = this.vertices.get(0).get(0);
@@ -116,12 +123,14 @@ class Maze extends World {
         this.makeGrey();
 
         this.alreadySeen.clear();
+        this.solution.clear();
         this.worklist.clear();
         this.worklist.add(this.vertices.get(0).get(0));
         this.current = this.vertices.get(0).get(0);
 
         this.current.color = Color.red;
         this.alreadySeen.add(current);
+        this.solution.add(current);
       }
 
     }
@@ -206,7 +215,8 @@ class Maze extends World {
     }
 
     if (!this.alreadySeen.contains(current)) {
-      this.alreadySeen.addFirst(current);
+      this.solution.addFirst(current);
+      this.alreadySeen.add(current);
     }
 
     if (current.xPos == this.width - 1 && current.yPos == this.height - 1) {
@@ -379,6 +389,7 @@ class Maze extends World {
   }
 
   // checks to see if the edge is in the minimum spanning tree
+  // TODO Look into this method and drawing to speed things up
   public boolean containsEdge(Vertex testFrom, Vertex testTo) {
     for (Edge e : minTree) {
       if (e.to.xPos == testTo.xPos && e.to.yPos == testTo.yPos && e.from.xPos == testFrom.xPos
@@ -416,12 +427,15 @@ class Maze extends World {
         worklist.addFirst(e.to);
       }
       // add next to alreadySeen, since we're done with it
-      alreadySeen.addFirst(next);
+      this.alreadySeen.add(next);
+      this.solution.addFirst(next);
     }
+
 
     if (next.xPos == this.width - 1 && next.yPos == this.height - 1) {
       this.worklist.clear();
-      alreadySeen.addFirst(next);
+      this.alreadySeen.add(next);
+      this.solution.addFirst(next);
       this.getSolution();
     }
 
@@ -439,7 +453,6 @@ class Maze extends World {
 
     if (this.alreadySeen.contains(next)) {
       this.bredthSearch();
-
     }
 
     else {
@@ -449,12 +462,14 @@ class Maze extends World {
 
       }
       // add next to alreadySeen, since we're done with it
-      alreadySeen.addFirst(next);
+      this.alreadySeen.add(next);
+      this.solution.addFirst(next);
     }
 
     if (next.xPos == this.width - 1 && next.yPos == this.height - 1) {
 
-      alreadySeen.addFirst(next);
+      this.alreadySeen.add(next);
+      this.solution.addFirst(next);
       this.worklist.clear();
       this.getSolution();
     }
@@ -464,11 +479,11 @@ class Maze extends World {
   // paints the path to the end blue, showing the solution
   public void getSolution() {
 
-    Vertex last = this.alreadySeen.removeFirst();
+    Vertex last = this.solution.removeFirst();
     last.color = Color.blue;
 
-    while (alreadySeen.size() > 0) {
-      Vertex nextLast = this.alreadySeen.removeFirst();
+    while (this.solution.size() > 0) {
+      Vertex nextLast = this.solution.removeFirst();
       if (this.containsEdge(nextLast, last) || this.containsEdge(last, nextLast)) {
         nextLast.color = Color.blue;
         last = nextLast;
@@ -1505,13 +1520,15 @@ class ExamplePixels {
 
   }
 
+  // TODO figure out the size thing to make sure it fits the screen
   void testBigBang(Tester t) {
     this.initMaze();
 
-    int width = 60;
-    int height = 60;
+    int width = 100;
+    int height = 25;
     Maze newMaze = new Maze(width, height);
-    newMaze.bigBang(width * 10, height * 10, .001);
+    // Make sure you mulitple times 10 so the maze fits the window
+    newMaze.bigBang(width * 10, height *10, .0001);
   }
 
 }
